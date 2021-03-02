@@ -103,6 +103,8 @@ _int_malloc 내부에서는 가장 먼저 checked_request2size를 통해 요청�
 - [Conversions](#Conversions)
 - [Size and alignment checks](#Size-and-alignment-checks)
 
+이후 malloc은 요청한 크기에 따라 fastbin, smallbin, largebin 등을 검사하며 이미 해제된 청크를 재활용하거나 새로운 메모리를 할당하게 된다.
+
 ### __libc_free
 
 ```c
@@ -194,7 +196,9 @@ static void _int_free (mstate av, mchunkptr p, int have_lock)
 }
 ```
 
-_int_free는 시작 부분에서 chunksize를 통해 청크의 크기를 구한 뒤 간단한 검증 과정을 거친다. check_inuse_chunk는 [MALLOC_DEBUG](#MALLOC_DEBUG)가 0일 경우 실행되지 않는다.
+_int_free는 시작 부분에서 chunksize를 통해 청크의 크기를 구한 뒤 간단한 검증 과정을 거친다. check_inuse_chunk는 [MALLOC_DEBUG](#MALLOC_DEBUG)가 0일 경우 실행되지 않는다. 
+
+이후 free는 요청한 크기에 따라 해제된 청크가 들어있는 bin을 관리 및 병합하게 된다.
 
 ##### free(): invalid pointer
 
@@ -449,7 +453,9 @@ free된 청크가 fastbin 크기에 해당하면 청크를 fastbin에 집어넣�
     }
 ```
 
-만약 해제한 청크 다음에 존재하는 청크의 크기가 2 * SIZE_SZ 이하 혹은 av->system_mem 이상일 경우 출력되는 에러이다. system_mem은 main_arena의 경우 128kb, 즉 0x20000을 기본값으로 가진다.
+해제한 청크 다음에 존재하는 청크의 크기가 2 * SIZE_SZ보다 크고 av->system_mem보다 작은지 검증한다. 
+
+system_mem은 main_arena의 경우 128kb, 즉 0x20000을 기본값으로 가진다.
 
 ##### double free or corruption (fasttop)
 
@@ -483,9 +489,11 @@ free된 청크가 fastbin 크기에 해당하면 청크를 fastbin에 집어넣�
     while ((old = catomic_compare_and_exchange_val_rel (fb, p, old2)) != old2);
 ```
 
-[free_perturb](#perturb)는 디버깅 용도가 아닐 경우 실행되지 않고, set_fastchunks는 아레나의 FASTCHUNKS_BIT를 0으로 만드는 역할을 한다. 이후 fastbinsY[idx]에 적혀 있던 주소를 old에 담고 double free 검증을 실시한다. 
+해제하려는 청크가 fastbin의 top과 다른지 검증한다.
 
-만약 old와 p가 같을 경우, 이미 fastbin의 top에 존재하는 청크를 한 번 더 해제하려는 시도이므로 에러 메세지를 출력하게 된다. 그렇지 않다면 p의 fd에 old를 적고, fastbinsY[idx]에 p를 적은 이후 while문을 빠져나온다.
+[free_perturb](#perturb)는 디버깅 용도가 아닐 경우 실행되지 않고, set_fastchunks는 아레나의 FASTCHUNKS_BIT를 0으로 만드는 역할을 한다. 
+
+이후 fastbinsY[idx]에 적혀 있던 주소를 old에 담고 double free 검증을 실시한다. 만약 old와 p가 같을 경우, 이미 fastbin의 top에 존재하는 청크를 한 번 더 해제하려는 시도이므로 에러 메세지를 출력하게 된다. 그렇지 않다면 p의 fd에 old를 적고, fastbinsY[idx]에 p를 적은 이후 while문을 빠져나온다.
 
 [catomic_compare_and_exchange_val_rel](#__sync_val_compare_and_swap)같은 함수가 종료 조건에 포함된 do while문을 라이브러리 내부에서 자주 관찰할 수 있는데, race condition을 예방하기 위한 구현으로 보인다.
 
@@ -499,7 +507,7 @@ free된 청크가 fastbin 크기에 해당하면 청크를 fastbin에 집어넣�
       }
 ```
 
-lock이 걸려 있을 경우 fastbin의 top에 있는 청크의 크기와 추가하고자 하는 청크의 크기가 일치하는지 검증한다.
+해제하려는 청크의 크기와 fastbin의 top의 크기가 같은지 검증한다.
 
 ### _int_malloc: fastbin
 
@@ -529,7 +537,7 @@ lock이 걸려 있을 경우 fastbin의 top에 있는 청크의 크기와 추가
     }
 ```
 
-만약 요청에 부합하는 청크의 크기가 fastbin에 속한다면, fastbinsY[idx]에 청크가 존재하는지 확인한 뒤 victim에 저장한다. 만약 같은 크기의 청크가 fastbin에 없다면 조건문을 빠져나와 다른 방식으로 할당되게 된다.
+만약 malloc으로 요청한 크기가 fastbin에 속한다면, 같은 크기의 fastbin에 이전에 해제된 청크가 있는지 확인한다.
 
 ##### malloc(): memory corruption (fast)
 
@@ -599,6 +607,8 @@ lock이 걸려 있을 경우 fastbin의 top에 있는 청크의 크기와 추가
     }
 ```
 
+작성중
+
 ## Largebin
 
 ### _int_malloc: largebin
@@ -622,6 +632,8 @@ lock이 걸려 있을 경우 fastbin의 top에 있는 청크의 크기와 추가
         malloc_consolidate (av);
     }
 ```
+
+작성중
 
 ## free check routines
 
@@ -677,6 +689,8 @@ lock이 걸려 있을 경우 fastbin의 top에 있는 청크의 크기와 추가
     munmap_chunk (p);
   }
 ```
+
+작성중
 
 ## Consolidate
 
@@ -742,7 +756,7 @@ lock이 걸려 있을 경우 fastbin의 top에 있는 청크의 크기와 추가
     }
 ```
 
-
+작성중
 
 ## Background
 
@@ -802,6 +816,8 @@ https://stackoverflow.com/questions/58082597/what-is-the-purpose-of-glibcs-atomi
   (chunk_non_main_arena (ptr) ? heap_for_ptr (ptr)->ar_ptr : &main_arena)
 ```
 
+작성중
+
 ##### **arena_get2**
 
 ```c
@@ -857,6 +873,8 @@ arena_get2 (size_t size, mstate avoid_arena)
 }
 ```
 
+작성중
+
 ##### **arena_get_retry**
 
 ```c
@@ -887,6 +905,8 @@ arena_get_retry (mstate ar_ptr, size_t bytes)
   return ar_ptr;
 }
 ```
+
+작성중
 
 ##### __sync_val_compare_and_swap
 
