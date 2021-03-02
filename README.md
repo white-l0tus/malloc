@@ -367,7 +367,7 @@ MIN_CHUNK_SIZE를 보면 offsetof(struct malloc_chunk, fd_nextsize)로 정의되
 
 ## Background
 
-**atomic_forced_read**
+##### **atomic_forced_read**
 
 ```c
 #ifndef atomic_forced_read
@@ -388,7 +388,7 @@ https://stackoverflow.com/questions/58082597/what-is-the-purpose-of-glibcs-atomi
 #endif
 ```
 
-컴파일러에게 주어진 expr의 값이 참과 거짓 중 어느 한 쪽이 많이 등장함을 알려줌으로써 조건문의 분기 예측 최적화에 도움을 준다. 자주 발생하지 않는 예외 등을 처리할 때 사용하면 프로그램 성능이 향상될 것이다.
+컴파일러에게 주어진 expr의 값이 참과 거짓 중 어느 한 쪽이 많이 등장함을 알려줌으로써 조건문의 분기 예측 최적화에 도움을 준다. 자주 발생하지 않는 예외 등을 처리할 때 사용하면 프로그램 성능 향상을 기대할 수 있다.
 
 ##### **arena_get**
 
