@@ -36,7 +36,7 @@ void *__libc_malloc (size_t bytes)
 }
 ```
 
-프로그램에서 할당할 메모리의 크기를 인자로 malloc을 호출할 경우 libc_malloc이 실행된다.  이 함수는 처음에 malloc_hook이 NULL인지 확인하고, 그렇지 않다면 hook에 적힌 함수를 대신 실행한다. 이 과정을 이용한 기법으로 **hook overwrite**이 존재한다. 이후 arena_get을 통해 사용할 arena의 주소를 받아오고 나서_int_malloc을 호출하고 할당된 메모리의 주소를 victim에 담아 반환한다.
+프로그램에서 할당할 메모리의 크기를 인자로 malloc을 호출할 경우 libc_malloc이 실행된다.  이 함수는 처음에 malloc_hook이 NULL인지 확인하고, 그렇지 않다면 hook에 적힌 함수를 대신 실행한다. (이 과정을 이용한 기법으로 **hook overwrite**이 존재한다.) 이후 arena_get을 통해 사용할 arena의 주소를 받아오고 나서_int_malloc을 호출하고 할당된 메모리의 주소를 victim에 담아 반환한다.
 
 ## _int_malloc : init
 
@@ -167,7 +167,7 @@ INTERNAL_SIZE_T는 힙 청크를 관리하기 위해 정의되는 단위 자료�
 #define MALLOC_ALIGN_MASK      (MALLOC_ALIGNMENT - 1)
 ```
 
-C 언어의 기본 데이터 타입은 모두 자신의 크기와 동일한 정렬 제한을 가지므로, __alignof__ (long double)은 16byte이고, 마찬가지로 malloc을 통해 할당되는 힙 청크 또한 16byte 단위로 메모리에 배치된다. 이 경우 MALLOC_ALIGN_MASK는 16진수로 0xf이고, 추후 연산에 사용된다.
+C 언어의 기본 데이터 타입은 모두 자신의 크기와 동일한 정렬 제한을 가지므로, \__alignof__ (long double)은 16byte이고, 마찬가지로 malloc을 통해 할당되는 힙 청크 또한 16byte 단위로 메모리에 배치된다. 이 경우 MALLOC_ALIGN_MASK는 16진수로 0xf이고, 이를 이용해 나머지와 같은 연산을 비트 연산으로 대체할 수 있다.
 
 ##### **Chunk representations**
 
@@ -305,7 +305,7 @@ MIN_CHUNK_SIZE를 보면 offsetof(struct malloc_chunk, fd_nextsize)로 정의되
 
 그러므로 위 상황은 청크의 크기가 0x30이므로 메모리는 0x20밖에 안될 것 같지만, 다음 청크의 prev_size를 이용함으로써 총 0x28바이트의 메모리를 할당할 수 있게 된 것이다. 
 
-그러므로 0x19~0x28 사이의 크기로 요청이 들어오게 되면 알맞은 청크의 크기는 0x30이 될 것이고, 이를 계산하는 공식이 ((req) + SIZE_SZ + MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK)임을 알 수 있다.
+따라서 0x19~0x28 사이의 크기로 요청이 들어오게 되면 알맞은 청크의 크기는 0x30이 될 것이고, 이를 계산하는 공식이 ((req) + SIZE_SZ + MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK)임을 알 수 있다.
 
 ```c
 #define request2size(req)                                         \
