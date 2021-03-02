@@ -209,7 +209,7 @@ _int_free는 시작 부분에서 chunksize를 통해 청크의 크기를 구한 
 만약 이전 절에서 SIZE_BITS에 대한 설명을 읽지 않았다면 아래의 두 내용을 확인하는 것을 추천한다. chunk operations의 경우 앞으로 자주 등장하게 되므로 이름을 익혀두고 기능이 헷갈리거나 궁금할때 찾아보면 좋을 것이다.
 
 - [SIZE_BITS](#SIZE_BITS)
-- [chunk operations](#chunk operations)
+- [chunk operations](#chunk-operations)
 
 ## Arena
 
@@ -1037,7 +1037,7 @@ INTERNAL_SIZE_T는 힙 청크를 관리하기 위해 정의되는 단위 자료�
 #define MALLOC_ALIGN_MASK      (MALLOC_ALIGNMENT - 1)
 ```
 
-C 언어의 기본 데이터 타입은 모두 자신의 크기와 동일한 정렬 제한을 가지므로, \__alignof__ (long double)은 16byte이고, 마찬가지로 malloc을 통해 할당되는 힙 청크 또한 16byte 단위로 메모리에 배치된다. 이 경우 MALLOC_ALIGN_MASK는 16진수로 0xf이고, 이를 이용해 나머지와 같은 연산을 비트 연산으로 대체할 수 있다.
+C 언어의 기본 데이터 타입은 모두 자신의 크기와 동일한 정렬 제한을 가지므로, \_\_alignof\_\_ (long double)은 16byte이고, 마찬가지로 malloc을 통해 할당되는 힙 청크 또한 16byte 단위로 메모리에 배치된다. 이 경우 MALLOC_ALIGN_MASK는 16진수로 0xf이고, 이를 이용해 나머지와 같은 연산을 비트 연산으로 대체할 수 있다.
 
 ##### **Chunk representations**
 
@@ -1188,7 +1188,7 @@ MIN_CHUNK_SIZE를 보면 offsetof(struct malloc_chunk, fd_nextsize)로 정의되
    (unsigned long) (INTERNAL_SIZE_T) (-2 * MINSIZE))
 ```
 
-예외 처리로 아주 작은 크기의 요청이 들어오는 경우에는 0x0이나 0x10이 아니라 힙 청크의 최소 크기인 0x20을 반환하고, -1과 같이 매우 큰 수가 들어오게 될 경우 REQUEST_OUT_OF_RANGE를 통해 청크의 크기가 0 근처로 할당되는 것을 방지한다.
+checked_request2size는 아주 작은 크기의 요청이 들어오는 경우에는 0x0이나 0x10이 아니라 힙 청크의 최소 크기인 0x20을 반환하고, -1과 같이 매우 큰 수가 들어오게 될 경우 REQUEST_OUT_OF_RANGE를 통해 청크의 크기가 0 근처로 할당되는 것을 방지한다.
 
 ##### SIZE_BITS
 
